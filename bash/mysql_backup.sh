@@ -29,7 +29,7 @@
 	# MySQL configuration
 	MYSQL_USERNAME="contex"
 	MYSQL_PASSWORD="password"
-	MYSQL_DATABASES=("contex_database1 contex_database2 contex_database3 contex_database4 contex_database5")
+	MYSQL_DATABASES=("contex_database1" "contex_database2" "contex_database3" "contex_database4" "contex_database5")
 	
 	# Remote SSH configuration
 	SSH_HOST="contex.me"
