@@ -71,7 +71,7 @@ fi
 	fi
 # End create directories
 
-# Change directory to $BACKUP_INNER_DIRECTORY temporally
+# Change directory to $BACKUP_INNER_DIRECTORY temporarily
 cd $BACKUP_DIRECTORY/$BACKUP_INNER_DIRECTORY/tmp
 START_TOTAL_TIME=`date +%s`
 
@@ -99,7 +99,7 @@ START_TOTAL_TIME=`date +%s`
 
 	for file in $BACKUP_DIRECTORY/$BACKUP_INNER_DIRECTORY/tmp/*
 	do
-	  echo "Deleted MySQL temporally backup: $file" >> $EMAIL_MESSAGE
+	  echo "Deleted MySQL temporarily backup: $file" >> $EMAIL_MESSAGE
 	  rm $file
 	done
 	END_TIME=`date +%s`
