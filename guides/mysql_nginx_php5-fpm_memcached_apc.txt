@@ -1,0 +1,235 @@
+################################################################################
+# This file is part of Code-Snipets <http://www.contex.me/>.
+#
+# Code-Snipets is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Code-Snipets is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
+################################################################################
+# 1 - Install MySQL
+#------------------------------------------------------------------------------#
+sudo apt-get install mysql-server mysql-client
+################################################################################
+
+################################################################################
+# 2 - Install PHP-FPM, Memcached and APC
+#------------------------------------------------------------------------------#
+sudo apt-get install php5 php5-cli php5-dev php5-gd php-pear php5-memcache \ 
+php5-dev php-apc php5-mcrypt php5-fpm php5-geoip libgeoip1 libgeoip-dev \ 
+geoip-database php5-mysql memcached libmemcached-tools memstat make
+#------------------------------------------------------------------------------#
+# 2.1 - If you get #E: Unable to locate package php5-fpm
+#------------------------------------------------------------------------------#
+sudo gpg --keyserver keys.gnupg.net --recv-key 89DF5277
+sudo gpg -a --export 89DF5277 | sudo apt-key add -
+sudo echo deb http://packages.dotdeb.org stable all >> /etc/apt/sources.list
+sudo apt-get update
+sudo apt-get install php5-fpm
+#------------------------------------------------------------------------------#
+
+################################################################################
+# 3 - Configure PHP-FPM
+#------------------------------------------------------------------------------#
+sudo nano /etc/php5/fpm/php.ini
+	memory_limit = 512M
+#------------------------------------------------------------------------------#
+sudo nano /etc/php5/fpm/pool.d/www.conf
+	pm.max_children = 50
+	pm.start_servers = 10
+	pm.min_spare_servers = 6
+	pm.max_spare_servers = 15
+	pm.max_requests = 1000
+	request_terminate_timeout = 60s
+################################################################################
+
+################################################################################
+# 4 - Configure Memcache
+#------------------------------------------------------------------------------#
+sudo nano /etc/php5/conf.d/memcache.ini
+	extension= memcache.so
+	memcache.hash_strategy="consistent"
+################################################################################
+
+################################################################################
+# 5 - Configure APC
+#------------------------------------------------------------------------------#
+sudo nano /etc/php5/conf.d/apc.ini
+	extension=apc.so
+	apc.shm_size = 256
+	apc.apc.stat = 0
+################################################################################
+
+################################################################################
+# 6 - Install Nginx
+#------------------------------------------------------------------------------#
+sudo apt-get install nginx
+################################################################################
+
+################################################################################
+# 7 - Configure Nginx
+#------------------------------------------------------------------------------#
+sudo nano /etc/nginx/nginx.conf
+	worker_processes 5;
+	worker_connections 1024;
+	log_format main '$remote_addr - $remote_user [$time_local] ' '"$request" $status $body_bytes_sent "$http_referer" ' '"$http_user_agent" "$http_x_forwarded_for"';
+	access_log /var/log/nginx/access.log main;
+	error_log /var/log/nginx/error.log debug;
+	gzip_proxied any;
+	gzip_comp_level 1;
+	gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript;
+################################################################################
+
+################################################################################
+# 8 - Configure fast-cgi params
+#------------------------------------------------------------------------------#
+sudo nano /etc/nginx/fastcgi_params
+	fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+	fastcgi_connect_timeout 60;
+	fastcgi_send_timeout 180;
+	fastcgi_read_timeout 180;
+	fastcgi_buffer_size 128k;
+	fastcgi_buffers 4 256k;
+	fastcgi_busy_buffers_size 256k;
+	fastcgi_temp_file_write_size 256k;
+	fastcgi_intercept_errors on;
+################################################################################
+
+################################################################################
+# 9 - Remove default nginx and add your own
+#------------------------------------------------------------------------------#
+sudo rm /etc/nginx/sites-enabled/default
+sudo nano /etc/nginx/sites-available/contex.me
+	server {
+		listen 80;
+		server_name *.contex.me;
+		server_tokens off;
+		rewrite  (.*)  http://www.contex.me$1;
+	}
+	server {
+		listen 80;
+
+		server_name contex.me www.contex.me;
+		server_tokens off;
+		
+		if ($http_host = contex.me) {
+			rewrite  (.*)  http://www.contex.me$1;
+		}
+
+		root /home/contex/sites/contex.me/web/public;
+		index index.html index.htm index.php;
+
+		#access_log /home/contex/sites/contex.me/web/logs/access/access.log combined;
+		access_log off;
+		error_log /home/contex/sites/contex.me/web/logs/error/error.log error;
+
+		error_page 502 503 @unavailable;
+
+		client_max_body_size 100m;
+
+		# Set expiration information for assets
+		location ~ \.(ico|css|js|gif|jpe?g|png)(\?[0-9]+)?$ {
+			#expires max;
+			log_not_found off;
+		}
+
+		location / {
+			rewrite ^/download$ / permanent;
+			try_files $uri $uri/ /index.php?$uri&$args;
+			index index.php index.html;
+		}
+		
+		location /internal_data/ {
+			internal;
+		}
+		location /library/ {
+		   internal;
+		}
+
+		location ~ \.php$ {
+			fastcgi_pass 127.0.0.1:9000;
+			fastcgi_index index.php;
+			include fastcgi_params;
+		}
+
+		location @unavailable {
+			root /home/contex/sites/unavailable/public;
+			rewrite ^(.*)$ /index.html break;
+		}
+	}
+################################################################################
+
+################################################################################
+# 10 - Enable site
+#------------------------------------------------------------------------------#
+sudo ln -s /etc/nginx/sites-available/contex.me /etc/nginx/sites-enabled/contex.me
+################################################################################
+
+################################################################################
+# 11 - Create MySQL database
+#------------------------------------------------------------------------------#
+mysql -u root -p
+mysql> CREATE DATABASE ss_web;
+################################################################################
+
+################################################################################
+# 12 - Create MySQL users
+#------------------------------------------------------------------------------#
+mysql> CREATE USER 'username'@'%' IDENTIFIED BY 'password';
+mysql> GRANT ALL PRIVILEGES ON * . * TO  'username'@'%' IDENTIFIED BY  'password' WITH GRANT OPTION MAX_QUERIES_PER_HOUR 0 MAX_CONNECTIONS_PER_HOUR 0 MAX_UPDATES_PER_HOUR 0 MAX_USER_CONNECTIONS 0 ;
+
+mysql> CREATE USER 'username'@'localhost' IDENTIFIED BY  'PASSWORD';
+mysql> GRANT USAGE ON *.* TO  'username'@'localhost' IDENTIFIED BY  'PASSWORD' WITH MAX_QUERIES_PER_HOUR 0 MAX_CONNECTIONS_PER_HOUR 0 MAX_UPDATES_PER_HOUR 0 MAX_USER_CONNECTIONS 0 ;
+mysql> GRANT ALL PRIVILEGES ON  `database` . * TO  'username'@'localhost';
+################################################################################
+
+################################################################################
+# 13 - Enable remote MySQL
+#------------------------------------------------------------------------------#
+sudo nano /etc/mysql/my.cnf
+	bind-address		= 0.0.0.0
+################################################################################
+
+################################################################################
+# 14 - Remove Apache2
+#------------------------------------------------------------------------------#
+sudo update-rc.d -f apache2 remove
+################################################################################
+
+################################################################################
+# 15 - Test PHP5-fpm
+#------------------------------------------------------------------------------#
+php5-fpm -t
+	[20-Apr-2013 17:29:08] NOTICE: configuration file /etc/php5/fpm/php-fpm.conf test is successful
+################################################################################
+
+################################################################################
+# 16 - Test nginx
+#------------------------------------------------------------------------------#
+sudo service nginx status
+	could not access PID file for nginx ... failed!
+sudo service nginx start
+	Starting nginx: nginx: [emerg] could not build the server_names_hash, you should increase server_names_hash_bucket_size: 32
+sudo service nginx configtest
+	Testing nginx configuration: nginx.
+#------------------------------------------------------------------------------#
+# 16.1 - Add below http {
+#------------------------------------------------------------------------------#
+sudo nano /etc/nginx/nginx.conf
+	server_names_hash_bucket_size   64;
+################################################################################
+	
+################################################################################
+# 17 - Restart everything
+#------------------------------------------------------------------------------#
+reboot
+################################################################################
