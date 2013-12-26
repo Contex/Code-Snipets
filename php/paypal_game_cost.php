@@ -14,12 +14,12 @@ $paypal_cost->displayDetails(TRUE);
 
 $paypal_cost->setExchangeCurrency('USD');
 $paypal_cost->setExchangeRates(array(
-		'EUR' => 1.36725,
-		'GBP' => 1.63536,
-		'AUD' => 0.89107,
-		'NOK' => 0.16259,
-		'PLN' => 0.32975,
-		'BRL' => 0.42415
+	'EUR' => 1.36725,
+	'GBP' => 1.63536,
+	'AUD' => 0.89107,
+	'NOK' => 0.16259,
+	'PLN' => 0.32975,
+	'BRL' => 0.42415
 ));
 
 $paypal_cost->parseData();
