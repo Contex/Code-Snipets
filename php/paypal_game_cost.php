@@ -1,4 +1,6 @@
 <?php
+# Example output: https://gist.github.com/Contex/9512f87600105d86ee53/raw/6a168a55ff9c87e921de313cc84deaf7d4b7c477/gistfile1.txt
+
 # See class for documentation
 $paypal_cost = new PayPalGameCost();
 $paypal_cost->setCSVFilename('paypal.csv');
