@@ -217,10 +217,9 @@ class PayPalGameCost
 
 			# Convert amount to positive
 			if (empty($csv_item['Amount'])) {
-				$csv_item['Amount'] = $csv_item['Net'] * -1;
-			} else {
-				$csv_item['Amount'] *= -1;
+				$csv_item['Amount'] = $csv_item['Net'];
 			}
+			$csv_item['Amount'] = abs(str_replace(',', '.', $csv_item['Amount']));
 
 			# Check stores and bundles
 			if (array_key_exists($csv_item['Name'], $this->game_stores)) {
